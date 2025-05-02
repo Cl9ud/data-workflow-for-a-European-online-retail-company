@@ -1,0 +1,104 @@
+-- Creating Tables
+
+-- 1. Customers Table
+CREATE TABLE Customers (
+    CustomerID INT AUTO_INCREMENT PRIMARY KEY,
+    FirstName VARCHAR(50) NOT NULL,
+    LastName VARCHAR(50) NOT NULL,
+    Email VARCHAR(100) UNIQUE NOT NULL,
+    PhoneNumber VARCHAR(20),
+    Address VARCHAR(255),
+    City VARCHAR(50),
+    PostalCode VARCHAR(20),
+    Country VARCHAR(50) NOT NULL
+);
+
+-- 2. Products Table
+CREATE TABLE Products (
+    StockCode VARCHAR(50) PRIMARY KEY,
+    Description TEXT NOT NULL,
+    UnitPrice DECIMAL(10, 2) NOT NULL,
+    QuantityOnHand INT NOT NULL
+);
+
+-- 3. Transactions Table
+CREATE TABLE Transactions (
+    TransactionID INT AUTO_INCREMENT PRIMARY KEY,
+    CustomerID INT,
+    InvoiceDate DATE NOT NULL,
+    TotalAmount DECIMAL(10, 2) NOT NULL,
+    FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID)
+);
+
+-- 4. Transaction Details Table
+CREATE TABLE Transaction_Details (
+    DetailID INT AUTO_INCREMENT PRIMARY KEY,
+    TransactionID INT,
+    StockCode VARCHAR(50) NOT NULL,
+    Quantity INT NOT NULL,
+    UnitPrice DECIMAL(10, 2) NOT NULL,
+    FOREIGN KEY (TransactionID) REFERENCES Transactions(TransactionID),
+    FOREIGN KEY (StockCode) REFERENCES Products(StockCode)
+);
+
+-- Additional Indexes for Performance
+CREATE INDEX idx_transactions_customerid ON Transactions(CustomerID);
+CREATE INDEX idx_transaction_details_transactionid ON Transaction_Details(TransactionID);
+CREATE INDEX idx_transaction_details_stockcode ON Transaction_Details(StockCode);
+
+-- 5. View to Combine Invoice Details
+CREATE VIEW SalesInvoiceView AS
+SELECT 
+    t.TransactionID AS InvoiceNo,
+    p.StockCode,
+    p.Description,
+    td.Quantity,
+    t.InvoiceDate,
+    p.UnitPrice,
+    c.CustomerID,
+    c.Country
+FROM 
+    Transactions t
+JOIN 
+    Transaction_Details td ON t.TransactionID = td.TransactionID
+JOIN 
+    Products p ON td.StockCode = p.StockCode
+JOIN 
+    Customers c ON t.CustomerID = c.CustomerID;
+Explanation:
+Customers Table: Stores customer information with a unique identifier (
+CustomerID
+), personal details, and contact information.
+
+Products Table: Holds the product catalog details including stock codes, descriptions, and unit pricing. The
+StockCode
+is set as the primary key for unique identification of products.
+
+Transactions Table: Records each transaction, linking to a customer via
+CustomerID
+. It includes an
+InvoiceDate
+and
+TotalAmount
+.
+
+Transaction_Details Table: Breaks down transactions into detailed line items. Each detail entry is associated with a transaction and a product, hence these are foreign keys referencing
+Transactions.TransactionID
+and
+Products.StockCode
+.
+
+Views and Indexes:
+
+SalesInvoiceView: This view aggregates information needed for generating invoice reports, combining data from
+Transactions
+,
+Transaction_Details
+,
+Products
+, and
+Customers
+.
+Indexes: Performance-enhancing indexes are added on frequently queried fields to speed up joins and lookups.
+
+This schema is designed to support a wide range of analytical queries typical for an online retail operation, ensuring that invoice-level details, product information, and customer data are all integrated and easily accessible.
