@@ -1,0 +1,90 @@
+import pandas as pd
+import sqlite3
+from io import StringIO
+
+# Step 1: Read the CSV data from a URL using Pandas
+url = "https://cf-courses-data.s3.us.cloud-object-storage.appdomain.cloud/IBMSkillsNetwork-AI0273EN-SkillsNetwork/labs/v1/m3/data/Project_data.csv"
+df = pd.read_csv(url)
+
+# Print initial dataset length
+print("Initial dataset length: ", len(df))
+
+# Step 2: Remove entries based on specified conditions
+# a. InvoiceNo starts with 'C'
+# b. StockCode is either 'M', 'D', 'C2' or 'POST'
+# c. CustomerID is missing
+df = df[~df['InvoiceNo'].str.startswith('C')]
+df = df[~df['StockCode'].isin(['M', 'D', 'C2', 'POST'])]
+df = df.dropna(subset=['CustomerID'])
+
+# Print dataset length after removal
+print("Dataset length after removal: ", len(df))
+
+# Step 3: Load the final data to an SQLite3 database
+# Create SQLite3 database connection
+conn = sqlite3.connect('Invoice_Records.db')
+cursor = conn.cursor()
+
+# Write DataFrame to SQL table
+df.to_sql('Purchase_transactions', conn, if_exists='replace', index=False)
+
+# Step 4: Run a sample query to display the first 5 rows of the table
+cursor.execute("SELECT * FROM Purchase_transactions LIMIT 5")
+rows = cursor.fetchall()
+for row in rows:
+    print(row)
+
+# Close the database connection
+conn.close()
+Explanation:
+Reading CSV Data: The
+pandas.read_csv()
+function is used to read the CSV file directly from the URL. It loads the data into a DataFrame named
+df
+.
+
+Data Cleaning:
+
+Using
+df.str.startswith('C')
+checks for entries where
+InvoiceNo
+starts with 'C'.
+df['StockCode'].isin(['M', 'D', 'C2', 'POST'])
+filters out rows where
+StockCode
+matches the specified values.
+df.dropna(subset=['CustomerID'])
+removes rows where
+CustomerID
+is NaN (missing).
+Saving to SQLite:
+
+An SQLite3 database named
+Invoice_Records.db
+is created.
+The DataFrame
+df
+is written to a table named
+Purchase_transactions
+in the database using the
+to_sql
+method.
+Querying the Database:
+
+A SQL query
+SELECT * FROM Purchase_transactions LIMIT 5
+retrieves the first five records from the
+Purchase_transactions
+table.
+The retrieved rows are printed out.
+This script ensures that the data is correctly filtered, stored, and then queried as per the specifications. Make sure you have the necessary libraries (
+pandas
+,
+sqlite3
+) 
+
+------------------------
+installed in your Python environment. You can install them using pip if not already available:
+
+pip install pandas
