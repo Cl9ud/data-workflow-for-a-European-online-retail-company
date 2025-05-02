@@ -1,0 +1,35 @@
+import pandas as pd
+import sqlite3
+
+# Read the CSV data from a URL
+url = "https://cf-courses-data.s3.us.cloud-object-storage.appdomain.cloud/IBMSkillsNetwork-AI0273EN-SkillsNetwork/labs/v1/m3/data/Project_data.csv"
+data = pd.read_csv(url)
+
+# Print the length of the dataset before removal
+print("Length of dataset before removal:", len(data))
+
+# Remove entries that meet the specified conditions
+initial_length = len(data)
+data = data[~data['InvoiceNo'].str.startswith('C')]
+data = data[~data['StockCode'].isin(['M', 'D', 'C2', 'POST'])]
+data = data.dropna(subset=['CustomerID'])
+
+# Print the length of the dataset after removal
+print("Length of dataset after removal:", len(data))
+print("Number of entries removed:", initial_length - len(data))
+
+# Load the final data to an SQLite3 database
+conn = sqlite3.connect('Invoice_Records.db')
+data.to_sql('Purchase_transactions', conn, if_exists='replace', index=False)
+
+# Run a sample query to display the first 5 rows of the table
+query_result = pd.read_sql_query("SELECT * FROM Purchase_transactions LIMIT 5;", conn)
+print(query_result)
+
+query = "SELECT * FROM Purchase_transactions WHERE Country IN ('Germany')"
+records = pd.read_sql(query, conn)
+
+# Print the extracted records
+print(records)
+
+conn.close()
