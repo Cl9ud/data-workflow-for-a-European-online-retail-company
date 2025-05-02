@@ -1,0 +1,150 @@
+1. Data Architecture
+
+Data Collection Layer
+Web Server Logs: Capture user interactions on the website (pages viewed, add-to-cart, purchase events).
+Sales Transactions: Historical and real-time transactional data from the POS systems.
+Customer Data: Demographic and behavioral data from CRM systems.
+Product Data: Catalog data including SKU, category, specifications, and inventory levels.
+Third-party Data: Integrate external data like market trends, competitor pricing, or weather data if relevant.
+
+Data Processing Layer
+Raw Data Storage: Use a staging area on high-capacity NAS (Network Attached Storage) for raw, incoming data.
+Data Transformation: Implement ETL processes to clean, standardize, and enrich data.
+Data Validation: Ensure data quality with checks for consistency, accuracy, and completeness.
+
+Data Storage Layer
+Data Warehouse: Centralized SQL database for analytical reporting, built on high-performance, scalable on-premises servers.
+
+Data Access Layer
+Business Intelligence Tools: Connect BI tools (e.g., Tableau, Power BI) to the data warehouse for ad-hoc querying and visualization.
+API Layer: Develop RESTful APIs for secure data access by internal applications.
+
+2. Data Warehouse Schema & ERD
+
+1. Customers Table
+Fields:
+CustomerID
+(Primary Key, INT, Auto-increment)
+FirstName
+(VARCHAR)
+LastName
+(VARCHAR)
+Email
+(VARCHAR, unique)
+PhoneNumber
+(VARCHAR)
+Address
+(VARCHAR)
+City
+(VARCHAR)
+PostalCode
+(VARCHAR)
+Country
+(VARCHAR)
+2. Products Table
+Fields:
+StockCode
+(Primary Key, VARCHAR, unique)
+Description
+(VARCHAR)
+UnitPrice
+(DECIMAL)
+QuantityOnHand
+(INT)
+3. Transactions Table
+Fields:
+TransactionID
+(Primary Key, INT, Auto-increment)
+CustomerID
+(Foreign Key, INT, references Customers.CustomerID)
+InvoiceDate
+(DATE)
+TotalAmount
+(DECIMAL)
+4. Transaction Details Table
+Fields:
+DetailID
+(Primary Key, INT, Auto-increment)
+TransactionID
+(Foreign Key, INT, references Transactions.TransactionID)
+StockCode
+(Foreign Key, VARCHAR, references Products.StockCode)
+Quantity
+(INT)
+UnitPrice
+(DECIMAL)
+Entity Relationship Diagram (ERD)
+Customers ||--o{ Transactions : "has"
+Customers ||--o{ Transaction_Details : "has"
+Transactions o--|| Product_Details : "contains"
+Products o--|| Transaction_Details : "is detailed by"
+Detailed Schema Explanation
+Customers Table
+Stores customer details including personal and contact information.
+Products Table
+Contains product catalog data with details like stock codes, descriptions, and unit prices.
+Transactions Table
+Records each transaction made by a customer. Includes invoice date and total amount.
+Transaction Details Table
+Breaks down each transaction into individual items, linking back to the products and customers. This table will allow us to capture invoice-level details such as the quantity and unit price of each item.
+Example SQL Statements for Populating Required Sales Invoice View
+To generate the final record of sales invoices with the specified headers (
+InvoiceNo
+,
+StockCode
+,
+Description
+,
+Quantity
+,
+InvoiceDate
+,
+UnitPrice
+,
+CustomerID
+,
+Country
+), we can create a view as follows:
+
+CREATE VIEW SalesInvoiceView AS
+SELECT 
+    t.TransactionID AS InvoiceNo,
+    p.StockCode,
+    p.Description,
+    td.Quantity,
+    t.InvoiceDate,
+    p.UnitPrice,
+    c.CustomerID,
+    c.Country
+FROM 
+    Transactions t
+JOIN 
+    Transaction_Details td ON t.TransactionID = td.TransactionID
+JOIN 
+    Products p ON td.StockCode = p.StockCode
+JOIN 
+    Customers c ON t.CustomerID = c.CustomerID;
+This view joins essential tables to aggregate information needed for invoice details and links them in a readable format suitable for analysis and reporting.
+
+
+
+3. Infrastructure Requirements
+Hardware:
+
+Data Warehouse Servers: High-RAM, high-CPU, and high-storage capacity servers (e.g., Dell PowerEdge R740xd or similar). Minimum spec: 256GB RAM, 16-core CPU, 10TB HDD/SSD RAID storage.
+NAS Storage: For raw data staging, use a high-capacity NAS device (e.g., NetApp FAS series).
+ETL Servers: Powerful machines for ETL processing (similar specification to data warehouse servers).
+Software:
+
+Operating System: Linux (e.g., CentOS) for servers.
+Database: PostgreSQL or Microsoft SQL Server for the data warehouse, considering their robustness and support for complex queries.
+
+ETL Tools: Talend Open Studio or Pentaho Data Integration for on-premises ETL, suitable for large-scale transformations.
+Version Control/Logging: Git for codebase management, and ELK Stack (Elasticsearch, Logstash, Kibana) for monitoring and logging.
+
+4. ETL Pipeline
+
+Tools: Talend Open Studio
+Extract:
+Use Talend tFileInputRaw components for collection from web logs and POS systems.
+For customer data, use
